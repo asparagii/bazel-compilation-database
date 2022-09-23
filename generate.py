@@ -26,6 +26,7 @@ import json
 import os
 import pathlib
 import subprocess
+import sys
 import tempfile
 import sys
 
@@ -79,8 +80,8 @@ if __name__ == "__main__":
 
     aspects_dir = os.path.dirname(os.path.realpath(__file__))
 
-    query = ('kind("cc_(library|binary|test|inc_library|proto_library)", {query_expr}) ' +
-             'union kind("objc_(library|binary|test)", {query_expr})').format(
+    query = ('kind("^cc_(library|binary|test|inc_library|proto_library)", {query_expr}) ' +
+             'union kind("^objc_(library|binary|test)", {query_expr})').format(
                  query_expr=args.query_expr)
     query_cmd = [_BAZEL, 'query']
     query_cmd.extend(['--noshow_progress', '--noshow_loading_progress', '--output=label'])
@@ -91,7 +92,7 @@ if __name__ == "__main__":
 
     # Clean any previously generated files.
     for db in pathlib.Path(bazel_exec_root).glob('**/*.compile_commands.json'):
-        os.remove(db)
+        db.unlink()
 
     build_args = [
         '--override_repository=bazel_compdb={}'.format(aspects_dir),

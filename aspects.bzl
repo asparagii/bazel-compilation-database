@@ -63,6 +63,11 @@ _objc_rules = [
 
 _all_rules = _cc_rules + _objc_rules
 
+# Temporary fix for https://github.com/grailbio/bazel-compilation-database/issues/101.
+DISABLED_FEATURES = [
+    "module_maps",
+]
+
 def _is_cpp_target(srcs):
     if all([src.extension in _c_or_cpp_header_extensions for src in srcs]):
         return True  # assume header-only lib is c++
@@ -287,8 +292,9 @@ def _compilation_database_aspect_impl(target, ctx):
         all_compdb_files.append(dep[OutputGroupInfo].compdb_files)
         all_header_files.append(dep[OutputGroupInfo].header_files)
 
+    # TODO: Remove CcInfo check once https://github.com/bazelbuild/bazel/pull/15426 is released
     # We support only these rule kinds.
-    if ctx.rule.kind not in _all_rules:
+    if ctx.rule.kind not in _all_rules or CcInfo not in target:
         return [
             CompilationAspect(compilation_db = depset(transitive = transitive_compilation_db)),
             OutputGroupInfo(
@@ -305,7 +311,7 @@ def _compilation_database_aspect_impl(target, ctx):
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + DISABLED_FEATURES,
     )
 
     if ctx.rule.kind in _cc_rules:
